@@ -3,8 +3,8 @@ version: 0.2
 # 1. Environment Variables (MUST BE UPDATED)
 env:
   variables:
-    AWS_REGION: "ap-south-1"
-    AWS_ACCOUNT_ID: "913536810155" # Replace with your AWS Account ID
+    AWS_REGION: "ap-south-2"
+    AWS_ACCOUNT_ID: "149660856401" # Replace with your AWS Account ID
     ECR_REPO_NAME: "ml-model-repo"
     IMAGE_TAG: "latest"
 
