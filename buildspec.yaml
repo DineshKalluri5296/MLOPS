@@ -1,0 +1,52 @@
+version: 0.2
+
+# 1. Environment Variables (MUST BE UPDATED)
+env:
+  variables:
+    AWS_REGION: "ap-south-1"
+    AWS_ACCOUNT_ID: "913536810155" # Replace with your AWS Account ID
+    ECR_REPO_NAME: "ml-model-repo"
+    IMAGE_TAG: "latest"
+
+phases:
+  install:
+    commands:
+      # Install python dependencies needed for the build (train.py)
+      - echo "Installing dependencies..."
+      - pip install --upgrade pip
+      - pip install -r requirements.txt
+      - pip install pytest
+
+  pre_build:
+    commands:
+      - echo "Pre-build phase - Log in to ECR"
+      # Login to ECR - requires AmazonEC2ContainerRegistryPowerUser policy on CodeBuild role
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+
+  build:
+    commands:
+      - echo "Build phase - Train model and build Docker image"
+      # Run the training script to generate model.pkl
+      - python train.py
+      # Optional: Run tests here (e.g., python -m pytest)
+
+      # Build the Docker image for the prediction API
+      - docker build -t $ECR_REPO_NAME:$IMAGE_TAG .
+
+  post_build:
+    commands:
+      - echo "Post-build phase - Tag and Push Docker image to ECR"
+      - FULL_IMAGE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:$IMAGE_TAG
+      - docker tag $ECR_REPO_NAME:$IMAGE_TAG $FULL_IMAGE_URI
+      - docker push $FULL_IMAGE_URI
+      - echo "Image pushed to ECR - $FULL_IMAGE_URI"
+
+      # Create imagedefinitions.json for ECS deployment
+      - echo "Creating imagedefinitions.json file..."
+      - printf '[{"name":"mymlopscontainer","imageUri":"%s"}]' $FULL_IMAGE_URI > imagedefinitions.json
+      # Replace mymlopscontainer with the container name defined in your ECS task definition
+
+artifacts:
+  files:
+    - imagedefinitions.json
+  base-directory: 
