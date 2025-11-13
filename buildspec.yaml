@@ -49,4 +49,5 @@ phases:
 artifacts:
   files:
     - imagedefinitions.json
-  base-directory: .
+  base-directory: output/
+
